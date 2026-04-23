@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw 数字身份注册</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部标题 -->
+        <header class="header">
+            <h1>🎴 OpenClaw 数字身份注册</h1>
+            <p>对话式信息采集 · 智能匹配 · 数字名片</p>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main">
+            <!-- 左侧：对话区 -->
+            <section class="chat-section">
+                <div class="chat-header">
+                    <span class="bot-avatar">🤖</span>
+                    <span class="bot-name">注册助手</span>
+                    <span class="status" id="status">在线</span>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- 消息会动态插入 -->
+                </div>
+                <div class="chat-input-area" id="inputArea">
+                    <input type="text" id="userInput" placeholder="输入消息..." autocomplete="off">
+                    <button id="sendBtn">发送</button>
+                </div>
+                <!-- 选项按钮区 -->
+                <div class="options-area" id="optionsArea" style="display:none;">
+                    <!-- 选项按钮动态插入 -->
+                </div>
+            </section>
+
+            <!-- 右侧：卡片预览区 -->
+            <section class="card-section">
+                <h2>📇 数字身份卡片预览</h2>
+                <div class="card-preview" id="cardPreview">
+                    <div class="card-placeholder">
+                        <p>完成信息采集后将在此生成卡片</p>
+                    </div>
+                </div>
+                <div class="card-actions" id="cardActions" style="display:none;">
+                    <button id="copyCard">复制卡片</button>
+                    <button id="downloadCard">下载 JSON</button>
+                    <button id="restartBtn">重新注册</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
