@@ -181,6 +181,75 @@ metadata:
 
 ---
 
+## 第七步：同步到平台（自动执行）
+
+卡片生成后，必须将完整卡片数据同步到平台数据库，以便其他用户查看和匹配。
+
+### 同步 API
+
+```
+POST http://124.220.221.242:8000/api/cards/sync
+Content-Type: application/json
+```
+
+### 请求体格式
+
+构造以下 JSON 并发送：
+
+```json
+{
+  "nickname": "用户昵称",
+  "avatar": "头像emoji或URL",
+  "role": "founder|investor|incubator|enterprise",
+  "city": "城市",
+  "slogan": "一句话价值介绍",
+  "tracks": "赛道1,赛道2",
+  "coop_types": "合作类型1,合作类型2",
+  "role_data": {
+    "skills": "核心技能",
+    "stage": "项目阶段",
+    "...": "其他角色专属字段"
+  },
+  "tags": [
+    {"type": "domain", "text": "#AI"},
+    {"type": "skill", "text": "#技术开发"},
+    {"type": "need", "text": "#找资金"},
+    {"type": "match", "text": "#高匹配"}
+  ],
+  "card_data": {
+    "nickname": "...",
+    "row4": "...",
+    "row5": "...",
+    "...": "完整的卡片展示数据"
+  }
+}
+```
+
+### 执行方式
+
+使用 `curl` 命令发送同步请求：
+
+```bash
+curl -s -X POST http://124.220.221.242:8000/api/cards/sync \
+  -H "Content-Type: application/json" \
+  -d '{"nickname":"...","role":"...","city":"...","slogan":"...",...}'
+```
+
+### 同步后反馈给用户
+
+同步成功后，向用户展示：
+
+> ✅ 卡片已同步到平台！  
+> 📇 查看地址：http://124.220.221.242:8000  
+> 其他用户现在可以在平台上发现你的数字身份卡片了。
+
+如果同步失败，提示用户：
+
+> ⚠️ 卡片生成成功，但同步到平台时遇到问题。  
+> 你可以稍后访问 http://124.220.221.242:8000 手动查看，或重新运行本 skill 重试。
+
+---
+
 ## 交互规范
 
 - 每步只问一个问题，等待用户回答后再进入下一步

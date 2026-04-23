@@ -44,6 +44,18 @@ class ChatResponse(BaseModel):
 class RestartRequest(BaseModel):
     session_id: Optional[str] = None
 
+class CardSyncRequest(BaseModel):
+    nickname: str
+    avatar: Optional[str] = ""
+    role: str
+    city: str
+    slogan: str
+    tracks: Optional[str] = ""
+    coop_types: Optional[str] = ""
+    role_data: Optional[Dict] = {}
+    tags: Optional[list] = []
+    card_data: Optional[Dict] = {}
+
 # ============ API 路由 ============
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -53,42 +65,7 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     
     # 如果完成，保存到数据库
     if result.get("done") and result.get("card"):
-        card_data = result["card"]
-        existing = db.query(UserCard).filter(
-            UserCard.nickname == card_data["nickname"]
-        ).first()
-        
-        card_json = json.dumps(card_data, ensure_ascii=False)
-        tags_json = json.dumps([t["text"] for t in card_data.get("tags", [])], ensure_ascii=False)
-        role_data_json = json.dumps(card_data.get("role_data", {}), ensure_ascii=False)
-        
-        if existing:
-            existing.avatar = card_data.get("avatar", "")
-            existing.role = card_data.get("role", "")
-            existing.city = card_data.get("city", "")
-            existing.slogan = card_data.get("slogan", "")
-            existing.tracks = card_data.get("tracks", "")
-            existing.coop_types = card_data.get("coop_types", "")
-            existing.role_data = role_data_json
-            existing.tags = tags_json
-            existing.card_data = card_json
-            existing.updated_at = datetime.utcnow()
-        else:
-            new_card = UserCard(
-                nickname=card_data["nickname"],
-                avatar=card_data.get("avatar", ""),
-                role=card_data.get("role", ""),
-                city=card_data.get("city", ""),
-                slogan=card_data.get("slogan", ""),
-                tracks=card_data.get("tracks", ""),
-                coop_types=card_data.get("coop_types", ""),
-                role_data=role_data_json,
-                tags=tags_json,
-                card_data=card_json,
-            )
-            db.add(new_card)
-        
-        db.commit()
+        _save_card_to_db(result["card"], db)
     
     return ChatResponse(
         session_id=sid,
@@ -144,6 +121,61 @@ def get_card(card_id: int, db: Session = Depends(get_db)):
         "tags": json.loads(card.tags) if card.tags else [],
         "card_data": json.loads(card.card_data) if card.card_data else {},
         "created_at": card.created_at.isoformat() if card.created_at else None,
+    }
+
+# ============ OpenClaw 同步端点 ============
+
+def _save_card_to_db(card_data: dict, db: Session) -> UserCard:
+    """保存或更新卡片到数据库"""
+    existing = db.query(UserCard).filter(
+        UserCard.nickname == card_data["nickname"]
+    ).first()
+    
+    card_json = json.dumps(card_data, ensure_ascii=False)
+    tags_json = json.dumps([t["text"] if isinstance(t, dict) else t for t in card_data.get("tags", [])], ensure_ascii=False)
+    role_data_json = json.dumps(card_data.get("role_data", {}), ensure_ascii=False)
+    
+    if existing:
+        existing.avatar = card_data.get("avatar", "")
+        existing.role = card_data.get("role", "")
+        existing.city = card_data.get("city", "")
+        existing.slogan = card_data.get("slogan", "")
+        existing.tracks = card_data.get("tracks", "")
+        existing.coop_types = card_data.get("coop_types", "")
+        existing.role_data = role_data_json
+        existing.tags = tags_json
+        existing.card_data = card_json
+        existing.updated_at = datetime.utcnow()
+        card = existing
+    else:
+        card = UserCard(
+            nickname=card_data["nickname"],
+            avatar=card_data.get("avatar", ""),
+            role=card_data.get("role", ""),
+            city=card_data.get("city", ""),
+            slogan=card_data.get("slogan", ""),
+            tracks=card_data.get("tracks", ""),
+            coop_types=card_data.get("coop_types", ""),
+            role_data=role_data_json,
+            tags=tags_json,
+            card_data=card_json,
+        )
+        db.add(card)
+    
+    db.commit()
+    db.refresh(card)
+    return card
+
+@app.post("/api/cards/sync")
+def sync_card(req: CardSyncRequest, db: Session = Depends(get_db)):
+    """接收 OpenClaw 推送的卡片数据"""
+    card_data = req.model_dump()
+    card = _save_card_to_db(card_data, db)
+    return {
+        "success": True,
+        "id": card.id,
+        "message": f"卡片 '{card.nickname}' 已同步到平台",
+        "url": f"http://124.220.221.242:8000"
     }
 
 # ============ 静态文件 ============
